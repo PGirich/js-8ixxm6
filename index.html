@@ -65,7 +65,7 @@
 
     <div class="check">
       <p>Выберите файл описания форматов
-      <input type = "file" id = "inpFile" onchange="showFile(this)">
+      <input type = "file" id = "inpFile" >
       </p>
       <p>Результаты обработки описания форматов:</p>
         <div id = "status"></div><textarea id = "resultText" disabled></textarea>
@@ -73,389 +73,468 @@
       <button disabled = true type="button" id="btnDowland">Загрузить</button>
     </div>
 </body>
+
+
 <script>
-    //Типы реквизитов
-    let arrayType = []
-    //Блок реквизитов и содержание структур
-    let lineRep = []
-    //Пространство имён
-    let documentId = "";
-    //Заголовок xsd схемы
-    let includeFile = "";
-    //Конструктор типов
-    function Object(name, type, limit, description) {
-        this.name = name,
-        this.type = type,
-        this.limit = limit,
-        this.description = description
-    }  
-    //Конструктор реквизитов
-    function Rep (id,name,binding,type,description) {
-        this.id = id,
-        this.name = name,
-        this.binding = binding,
-        this.type = type,
-        this.description = description
+console.log('init start');
+
+//Типы реквизитов
+let arrayType = [];
+//Блок реквизитов и содержание структур
+let lineRep = [];
+//Пространство имён
+let documentId = '';
+//Заголовок xsd схемы
+let includeFile = '';
+//Конструктор типов
+function Object(name, type, limit, description) {
+  (this.name = name),
+    (this.type = type),
+    (this.limit = limit),
+    (this.description = description);
+}
+//Конструктор реквизитов
+function Rep(id, name, binding, type, description) {
+  (this.id = id),
+    (this.name = name),
+    (this.binding = binding),
+    (this.type = type),
+    (this.description = description);
+}
+//Флаг
+let f = 0;
+//Нахождение ограничений
+const searchLimit =
+  /(maxLength\s*:\s*\d*$|minLength\s*:\s*\d*|length\s*value\s*=\s*("\d+"|«\d+»)|totalDigits\s*value\s*=\s*"\d+"|fractionDigits\s*value\s*=\s*"\d+"|minInclusive\s*(:|value\s*=)\s*(-?\n?\d+|("|«).+("|»);)|maxInclusive\s*(:|value\s*=)\s*(\d+|("|«).+("|»));?|maxExclusive\s*(:|value\s*=)\s*(\d+|("|«).+("|»));?)/gm;
+
+//Обработка файла
+function showFile(input) {
+  //Текстовый файл
+  let textReader = '';
+  let file = input.files[0];
+  let reader = new FileReader();
+  //Чтение файла
+  reader.readAsText(file);
+  //Файл прочитан
+  reader.onload = function () {
+    //Помещаем текст
+    textReader = reader.result;
+    //Нахождение пространства имён
+    documentId = textReader.match(/htts?p.*?\s/);
+    if (!documentId) {
+      resultText.value = 'Не указано пространство имён';
+      console.log(textReader);
+      showText('Ошибка');
+      return;
     }
-    //Флаг
-    let f = 0
-    //Нахождение ограничений
-    const searchLimit = /(maxLength\s*:\s*\d*$|minLength\s*:\s*\d*|length\s*value\s*=\s*("\d+"|«\d+»)|totalDigits\s*value\s*=\s*"\d+"|fractionDigits\s*value\s*=\s*"\d+"|minInclusive\s*(:|value\s*=)\s*(-?\n?\d+|("|«).+("|»);)|maxInclusive\s*(:|value\s*=)\s*(\d+|("|«).+("|»));?|maxExclusive\s*(:|value\s*=)\s*(\d+|("|«).+("|»));?)/gm
-
-    //Обработка файла
-    function showFile(input) {     
-        //Текстовый файл
-        let textReader = "";
-        let file = input.files[0]; 
-        let reader = new FileReader();
-        //Чтение файла
-        reader.readAsText(file); 
-        //Файл прочитан
-        reader.onload = function() { 
-            //Помещаем текст 
-            textReader = reader.result; 
-            //Нахождение пространства имён
-            documentId = textReader.match(/htts?p.*?\s/) 
-            if (!documentId) {
-                resultText.value = "Не указано пространство имён";
-                console.log(textReader)
-                showText("Ошибка");
-                return
-            }
-            //Флаг ошибки
-            let err = 0
-            //Счётчик
-            let n = 0
-            let f = true
-            //Счётчик
-            let i = 0;
-            //Строка таблицы
-            let check = ""
-            //Последняя строка таблицы
-            let checkEnd = ""
-            //Название блока(Таблицы)
-            let namtip = ""
-            //Описание блока(Таблицы)
-            let dectip = ""
-            //Данные об реквизите(объекте)
-            let namtipObj = ''
-            //Нахождение строк в документе
-            count = textReader.match(/(^\s{4,5}\d+\.?\s+[A-Z]|^\d{1,2}\s*[A-Z][^\n\r])/mg)
-            while (true) {
-              //Превая строка
-              if (!i) {check = textReader.substring(textReader.indexOf(count[i]),textReader.indexOf(count[i+1]))
-              }
-              else{
-                  //Последующие строки
-                  if (i != count.length-1) {
-                    check = textReader.substring(textReader.indexOf(count[i],textReader.indexOf(check)),textReader.indexOf(count[i+1],textReader.indexOf(count[i],textReader.indexOf(check))))  
-                  }
-              //Последняя строка
-              if ((/\s+(Перечень видов|Перечень типов)/gm.test(check)) || (i == count.length-1)) {
-                  checkEnd = textReader.slice(textReader.indexOf(count[i],textReader.indexOf(check)),textReader.indexOf(textReader.match(/\s+(Перечень видов|Перечень типов)/g)))
-              
-                  updateRep(checkEnd,i)
-                  break
-              }
-              }
-              //Нахождение полседней строчки таблицы
-              if (check.indexOf('Таблица') == -1){ 
-                if (f) updateFile(check,i)
-                  else {
-                      updateRep(check,i,n)
-                      n++
-                  }
-                }
-                else {
-                    namtip = check.match(/((?<=Таблица \d. Описание составного типа данных\s)|(?<=Таблица \d{2}. Описание составного типа данных\s)|(?<=состава для блока\s)|(?<=\(блока\)\s))[A-Za-z0-9]+\b/m)
-                    dectip = check.match(/(?<=\()[А-Яа-я,\.\s]+(?=\)\n)/m) 
-                      if (!namtip) {
-                          resultText.value = "Непраильно записано название блока"
-                      }
-                        //Собираем данные реквизита                      
-                      namtipObj = {
-                          id:namtip,
-                          name:dectip
-                      }
-                      //заносим блок реквитита в массив типов
-                      if (!f) arrayType.push(lineRep)
-                      
-                      checkTable = check.slice(0,check.indexOf('Таблица'))  
-                      
-                      if (f) {
-                          updateFile(checkTable,i)
-                          f = false
-                      }
-                      else {
-                          updateRep(checkTable,i,n)
-                          n = 0
-                          lineRep[n] = namtipObj
-                      }
-                  }
-                i++
-            //Резервный выход
-            if (i >= 500) break  
-            //Вывод ошибки
-            if (err) {
-                showText("Ошибка")
-                err =0 
-            }else {
-                showText("Успех")
-                document.getElementById("btnDowland").disabled = false;
-            }
-
-        }; 
-        //Ошибка чтения
-        reader.onerror = function() { 
-            resultText.value = reader.error; 
-        }; 
-    };
-  }
-        
-    //Загрузка XSD схемы
-    document.getElementById("btnDowland").addEventListener('click',function() {
-        //Элементы описания
-        let elementText = ""; 
-        //Элемент ошибок
-        let writeWarn = "";
-        //Заголовок
-        includeFile = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:fssp="${documentId}" targetNamespace="${documentId}" elementFormDefault="qualified" attributeFormDefault="unqualified">\n`
-
-
-        //Проверка использования типов в реквезитах
-        // for (let i = 1 ; i<= IpProperty.length-1;i++) {
-        //     f = 0;
-        //      for (let j in arrayType) {
-        //         if (arrayType[j].name == IpProperty[i].type) {f = 1}
-        //         }
-        //     if (!f) {writeWarn =  i; break}
-        //     }
-        // if (f == 0) {
-        //     resultText.value = `Строка ${writeWarn}: Такого типа в реквезитах несуществует`;
-        //     showText("Ошибка")       
-        // }else{
-            
-            
-        //Оформление xsd
-        //Заполнение структуры типов
-        for (let i = 0; i <= arrayType.length-1;i++){
-            let desine = arrayType[i];
-        
-            //Заполнение ограничений
-            let textPattern =  (desine.limit?.min) ? 
-            (`        <xs:${desine.limit.min}/>\n        <xs:${desine.limit.max}/>\n`)  : (desine.limit) ? (`       <xs:${desine.limit}/>\n`) : ""
-
-            
-            //Заполнение элементов
-            if (desine?.element) {
-                
-                for (let j in desine.element) {
-                    elementText = elementText + `      <xs:enumeration value="${j}">\n          <xs:annotation>\n             <xs:documentation>${desine.element[j]}</xs:documentation>\n          </xs:annotation>\n      </xs:enumeration>\n`
-                }
-            }
-            //Заполнение структуры типов
-            includeFile = includeFile + `<xs:simpleType = "${desine.name}">\n    <xs:annotation>\n        <xs:documentation>${desine.description}</xs:documentation>\n    </xs:annotation>\n    <xs:restriction base="${desine.type}">\n${textPattern}${elementText}    </xs:restriction>\n</xs:simpleType>\n`;
-            elementText = "";
+    //Флаг ошибки
+    let err = 0;
+    //Счётчик
+    let n = 0;
+    let f = true;
+    //Счётчик
+    let i = 0;
+    //Строка таблицы
+    let check = '';
+    //Последняя строка таблицы
+    let checkEnd = '';
+    //Название блока(Таблицы)
+    let namtip = '';
+    //Описание блока(Таблицы)
+    let dectip = '';
+    //Данные об реквизите(объекте)
+    let namtipObj = '';
+    //Нахождение строк в документе
+    count = textReader.match(
+      /(^\s{4,5}\d+\.?\s+[A-Z]|^\d{1,2}\s*[A-Z][^\n\r])/gm
+    );
+    while (true) {
+      //Превая строка
+      if (!i) {
+        check = textReader.substring(
+          textReader.indexOf(count[i]),
+          textReader.indexOf(count[i + 1])
+        );
+      } else {
+        //Последующие строки
+        if (i != count.length - 1) {
+          check = textReader.substring(
+            textReader.indexOf(count[i], textReader.indexOf(check)),
+            textReader.indexOf(
+              count[i + 1],
+              textReader.indexOf(count[i], textReader.indexOf(check))
+            )
+          );
         }
-        
-        //Название файла
-        fileName = "xsd_schema.txt";
-        //Скачивание файла
-        saveData(includeFile, fileName);
-        // ------------------------------------------------------------------------------------------------
-            // Структура реквизитов
-            // resultText.value = resultText.value +`<xs:element name="${IpProperty[0].id}" type="${IpProperty[0].id}Type" substitutionGroup="fssp:Object"/>
-            // <xs:complexType name="${IpProperty[0].id}Type">
-            //     <xs:annotation>
-            //     <xs:documentation>${IpProperty[0].name}</xs:documentation>
-            //     </xs:annotation>
-            //     <xs:complexContent>
-            //         <xs:extension base="fssp:ObjectType">
-            //             <xs:sequence>\n`
-            
-            // for (let i = 1 ; i<= IpProperty.length-1;i++) {
+        //Последняя строка
+        if (
+          /\s+(Перечень видов|Перечень типов)/gm.test(check) ||
+          i == count.length - 1
+        ) {
+          checkEnd = textReader.slice(
+            textReader.indexOf(count[i], textReader.indexOf(check)),
+            textReader.indexOf(
+              textReader.match(/\s+(Перечень видов|Перечень типов)/g)
+            )
+          );
 
-            //     resultText.value = resultText.value + `<xs:element name="${IpProperty[i].id}" type="fssp:${IpProperty[i].type}" minOccurs="${IpProperty[i].binding}">
-            //                 <xs:annotation>
-            //                     <xs:documentation>${IpProperty[i].name}</xs:documentation>
-            //                     <xs:documentation>${IpProperty[i].description}</xs:documentation>
-            //                 </xs:annotation>
-            //             </xs:element>`
-                
-            // }
-
-
-        //}    
-        // -----------------------------------------------------------------------------------------------
-        })
-        //Вывод сообщения об ошибке на экран
-        function showText(stat) {
-            if (stat) {
-                document.getElementById("status").innerHTML = `-${stat}:`;
-            }
-            else{
-                document.getElementById("status").innerHTML = ``;
-            }
+          updateRep(checkEnd, i);
+          break;
         }
-
-        //Скачивание файла xsd 
-        let saveData = (function () {
-            let a = document.createElement("a");
-            return function (data, fileName) {
-                let json = data,
-                    blob = new Blob([json], {type: "C:/"}),
-                    url = window.URL.createObjectURL(blob);
-                a.href = url;
-                a.download = fileName;
-                a.click();
-                window.URL.revokeObjectURL(url);
-            };
-        }());
-
-        //Обработка строки 
-        function updateFile(upFile,i) {
-        //переменные для хранения/обработки/передачи данных из текста
-        //Название типа
-        let nam = ""
-        //Тип данных
-        let tip = ""
-        //Ограничение типа
-        let lim = ""
-        //Описание типв
-        let dec = ""
-        //Ограничение типа -- строка
-        let limObj = ""
-        //Ограничение типа -- объект
-        let limStr = ""
-        //Нахождение имени
-        nam = upFile.match(/^D[A-Za-z0-9]*\s*Typ[eе]$/m);
-        if (!nam) {
-          nam = upFile.match(/^D[A-Za-z0-9А-Яа-я]*\s*Typ[eе]$/m);
-          if (nam) {
-              resultText.value = `В названии типа указана русская буква. Строка:${i+1}`  
-          }else{
-            resultText.value = `Не указано название типа. Строка:${i+1}`  
-          }
-          console.log(upFile)
-          return f = 1
-        }
-        tip = (!upFile.match(/^[a-z]\w*$/m)) ? '' : upFile.match(/^[a-z]\w*$/m);
-        //Нахождение ограничений
-        try{
-        lim = (!upFile.match(searchLimit) ? '' : upFile.match(searchLimit));
-
-        if (lim) {
-
-            for (j in lim){
-                if (!lim[j].includes(lim[j].match(/".+"/m))) {
-                    lim[j] = lim[j].replace(lim[j].match(/\d+/m),`"${lim[j].match(/\d+/m)}"`)
-                }
-            } 
-
-            if (lim.length == 2) {
-                limStr = lim.join(',')
-            }
-            else   {limStr = lim[0]} 
-        }  
-        else limStr = ""  
-        if (limStr){  
-            limStr = limStr.replace(/(:\s|:\D)/g, ' value= ' )
-            limStr = limStr.replace(";","") 
-            limStr = limStr.replace(/(«|»)/g, '"')
-            limStr = limStr.replace(/\n/g, '')
-        } 
-        if ((limStr.includes('minLength')) || (limStr.includes('totalDigits')) || (limStr.includes('minInclusive'))){
-            limObj = {
-                min:`${limStr.slice(0,limStr.indexOf(","))}`,
-                max:`${limStr.slice(limStr.indexOf(',')+1,)}`
-            }
-        } else if (limStr.includes('length')){
-            if (limStr.includes(',')){
-                lim = limStr.match(/\d+/g)
-                limObj = `pattern value="\\d{${lim[0]}},\\d{${lim[1]}}"`
-            }
-            else {limObj = `pattern value="\\d{${limStr.match(/\d+/)}}"`}
-        } else limObj = limStr
-        }
-        catch{
-            resultText.value = `При обработке ограничений возникла ошибка. Строка:${i+1}`
-            console.log(upFile)
-            return f = 1
-        }
-        //Нахождение описания
-        try{
-            dec = (upFile.match(/(^[а-я].+(?=\sВозможные значения)|^[а-я].+$)/mg)).join("");
-        }
-        catch{
-            resultText.value = `При обработке описания возникла ошибка. Строка:${i+1}`
-            console.log(upFile)
-            return err = 1
-        }
-       
-        //Загружаем данные в объект
-        let obj = new Object(nam,tip,limObj,dec)
-        arrayType[i] = obj
-
-        //Проверка данных
-        if (obj.limit?.min) {
-            console.log("\n["+ '\n' + obj.name+'\n'+obj.type+ "\n[min: "+obj.limit.min + "\nmax: "+obj.limit.max+']'+'\n'+obj.description+']')
-        }
+      }
+      //Нахождение полседней строчки таблицы
+      if (check.indexOf('Таблица') == -1) {
+        if (f) updateFile(check, i);
         else {
-            console.log( "\n[" + '\n' + obj.name+'\n'+obj.type+'\n'+obj.limit+'\n'+obj.description+']')}
-        } 
+          updateRep(check, i, n);
+          n++;
+        }
+      } else {
+        namtip = check.match(
+          /((?<=Таблица \d. Описание составного типа данных\s)|(?<=Таблица \d{2}. Описание составного типа данных\s)|(?<=состава для блока\s)|(?<=\(блока\)\s))[A-Za-z0-9]+\b/m
+        );
+        dectip = check.match(/(?<=\()[А-Яа-я,\.\s]+(?=\)\n)/m);
+        if (!namtip) {
+          resultText.value = 'Непраильно записано название блока';
+        }
+        //Собираем данные реквизита
+        namtipObj = {
+          id: namtip,
+          name: dectip,
+        };
+        //заносим блок реквитита в массив типов
+        if (!f) arrayType.push(lineRep);
 
-        //обработка реквизитов и остальних типов
-        function updateRep (upRep,i,n){
-          //Название элемента
-          let namr = ''
-          //Название реквитита документов
-          let name_el = ''
-          //Обязвательность
-          let imp = ''
-          //Тип
-          let tip = ''
-          //Описание реквитита
-          let dec = ''
+        checkTable = check.slice(0, check.indexOf('Таблица'));
 
-          namr = upRep.match(/^[A-Za-zА-Я]+\s*$/m)
-          if (!namr){
-            amr = upRep.match(/^[A-Za-zА-Яа-я]+\s*$/m)
-            if (namr){
-              resultText.value = `В названии типа указана русская буква. Строка:${n}`  
-          }else{
-              resultText.value = `Неправильное название элемента реквизита${lineRep[0].id}. Строка:${n}` 
-          }
-            nam_el = upRep.slice(upRep.indexOf(namr)+namr.length+1,).match(/^[A-Zа-яА-Я].+$/m)
+        if (f) {
+          updateFile(checkTable, i);
+          f = false;
+        } else {
+          updateRep(checkTable, i, n);
+          n = 0;
+          lineRep[n] = namtipObj;
+        }
+      }
+      i++;
+      //Резервный выход
+      if (i >= 500) break;
+      //Вывод ошибки
+      if (err) {
+        showText('Ошибка');
+        err = 0;
+      } else {
+        showText('Успех');
+        document.getElementById('btnDowland').disabled = false;
+      }
+    }
+    //Ошибка чтения
+    reader.onerror = function () {
+      resultText.value = reader.error;
+    };
+  };
+}
 
-            imp = (upRep.match(/^да\s/m)) ? ("1") : ("0")
+//Загрузка XSD схемы
+document.getElementById('btnDowland').addEventListener('click', function () {
+  //Элементы описания
+  let elementText = '';
+  //Элемент ошибок
+  let writeWarn = '';
+  //Заголовок
+  includeFile = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:fssp="${documentId}" targetNamespace="${documentId}" elementFormDefault="qualified" attributeFormDefault="unqualified">\n`;
 
-            tip = upRep.match(/((?<=\n{2})|(?<=д[аa]\n))^[A-ZА-Я]{1,2}.*\s*\s*/mg) 
-            
-            try {
-                dec =  upRep.slice(upRep.indexOf(nam_el)+1).match(/((?<=.Type\n)|(?<=.Type\s\n))[А-Яа-яA-Z].+(?!\nда)(\n.+[^Type])*$/m).join('')
-            }
-            catch {
-                dec = upRep.match(/^[A-Z]{1,2}.+Type$/m)
-                    if (dec) resultText.value = "Тип указан неверно блока: "+lineRep[0].id+'.   \n Проверьте "Type" в строке ' + n
-                    else{
-                      console.log(upRep,"-описание---",dec)
-                      resultText.value = "Проверьте описание блока "+lineRep[0].id+'в строке ' + n
-                    }
-                    return err = 1
-                }
-                
-                let objr= new Rep(namr,nam_el,imp,tip,dec) 
-                lineRep[n]= objr
-            }
-          }
-        //Очистка файлов
-        document.getElementById("ClearFile").addEventListener('click',function() {
-            resultText.value = ""
-            showText("")
-            arrayType = []
-            lineRep = []
-            document.getElementById("inpFile").value = null
-      });
+  //Проверка использования типов в реквезитах
+  // for (let i = 1 ; i<= IpProperty.length-1;i++) {
+  //     f = 0;
+  //      for (let j in arrayType) {
+  //         if (arrayType[j].name == IpProperty[i].type) {f = 1}
+  //         }
+  //     if (!f) {writeWarn =  i; break}
+  //     }
+  // if (f == 0) {
+  //     resultText.value = `Строка ${writeWarn}: Такого типа в реквезитах несуществует`;
+  //     showText("Ошибка")
+  // }else{
+
+  //Оформление xsd
+  //Заполнение структуры типов
+  for (let i = 0; i <= arrayType.length - 1; i++) {
+    let desine = arrayType[i];
+
+    //Заполнение ограничений
+    let textPattern = desine.limit?.min
+      ? `        <xs:${desine.limit.min}/>\n        <xs:${desine.limit.max}/>\n`
+      : desine.limit
+      ? `       <xs:${desine.limit}/>\n`
+      : '';
+
+    //Заполнение элементов
+    if (desine?.element) {
+      for (let j in desine.element) {
+        elementText =
+          elementText +
+          `      <xs:enumeration value="${j}">\n          <xs:annotation>\n             <xs:documentation>${desine.element[j]}</xs:documentation>\n          </xs:annotation>\n      </xs:enumeration>\n`;
+      }
+    }
+    //Заполнение структуры типов
+    includeFile =
+      includeFile +
+      `<xs:simpleType = "${desine.name}">\n    <xs:annotation>\n        <xs:documentation>${desine.description}</xs:documentation>\n    </xs:annotation>\n    <xs:restriction base="${desine.type}">\n${textPattern}${elementText}    </xs:restriction>\n</xs:simpleType>\n`;
+    elementText = '';
+  }
+
+  //Название файла
+  fileName = 'xsd_schema.txt';
+  //Скачивание файла
+  saveData(includeFile, fileName);
+  // ------------------------------------------------------------------------------------------------
+  // Структура реквизитов
+  // resultText.value = resultText.value +`<xs:element name="${IpProperty[0].id}" type="${IpProperty[0].id}Type" substitutionGroup="fssp:Object"/>
+  // <xs:complexType name="${IpProperty[0].id}Type">
+  //     <xs:annotation>
+  //     <xs:documentation>${IpProperty[0].name}</xs:documentation>
+  //     </xs:annotation>
+  //     <xs:complexContent>
+  //         <xs:extension base="fssp:ObjectType">
+  //             <xs:sequence>\n`
+
+  // for (let i = 1 ; i<= IpProperty.length-1;i++) {
+
+  //     resultText.value = resultText.value + `<xs:element name="${IpProperty[i].id}" type="fssp:${IpProperty[i].type}" minOccurs="${IpProperty[i].binding}">
+  //                 <xs:annotation>
+  //                     <xs:documentation>${IpProperty[i].name}</xs:documentation>
+  //                     <xs:documentation>${IpProperty[i].description}</xs:documentation>
+  //                 </xs:annotation>
+  //             </xs:element>`
+
+  // }
+
+  //}
+  // -----------------------------------------------------------------------------------------------
+});
+//Вывод сообщения об ошибке на экран
+function showText(stat) {
+  if (stat) {
+    document.getElementById('status').innerHTML = `-${stat}:`;
+  } else {
+    document.getElementById('status').innerHTML = ``;
+  }
+}
+
+//Скачивание файла xsd
+let saveData = (function () {
+  let a = document.createElement('a');
+  return function (data, fileName) {
+    let json = data,
+      blob = new Blob([json], { type: 'C:/' }),
+      url = window.URL.createObjectURL(blob);
+    a.href = url;
+    a.download = fileName;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+})();
+
+//Обработка строки
+function updateFile(upFile, i) {
+  //переменные для хранения/обработки/передачи данных из текста
+  //Название типа
+  let nam = '';
+  //Тип данных
+  let tip = '';
+  //Ограничение типа
+  let lim = '';
+  //Описание типв
+  let dec = '';
+  //Ограничение типа -- строка
+  let limObj = '';
+  //Ограничение типа -- объект
+  let limStr = '';
+  //Нахождение имени
+  nam = upFile.match(/^D[A-Za-z0-9]*\s*Typ[eе]$/m);
+  if (!nam) {
+    nam = upFile.match(/^D[A-Za-z0-9А-Яа-я]*\s*Typ[eе]$/m);
+    if (nam) {
+      resultText.value = `В названии типа указана русская буква. Строка:${
+        i + 1
+      }`;
+    } else {
+      resultText.value = `Не указано название типа. Строка:${i + 1}`;
+    }
+    console.log(upFile);
+    return (f = 1);
+  }
+  tip = !upFile.match(/^[a-z]\w*$/m) ? '' : upFile.match(/^[a-z]\w*$/m);
+  //Нахождение ограничений
+  try {
+    lim = !upFile.match(searchLimit) ? '' : upFile.match(searchLimit);
+
+    if (lim) {
+      for (j in lim) {
+        if (!lim[j].includes(lim[j].match(/".+"/m))) {
+          lim[j] = lim[j].replace(
+            lim[j].match(/\d+/m),
+            `"${lim[j].match(/\d+/m)}"`
+          );
+        }
+      }
+
+      if (lim.length == 2) {
+        limStr = lim.join(',');
+      } else {
+        limStr = lim[0];
+      }
+    } else limStr = '';
+    if (limStr) {
+      limStr = limStr.replace(/(:\s|:\D)/g, ' value= ');
+      limStr = limStr.replace(';', '');
+      limStr = limStr.replace(/(«|»)/g, '"');
+      limStr = limStr.replace(/\n/g, '');
+    }
+    if (
+      limStr.includes('minLength') ||
+      limStr.includes('totalDigits') ||
+      limStr.includes('minInclusive')
+    ) {
+      limObj = {
+        min: `${limStr.slice(0, limStr.indexOf(','))}`,
+        max: `${limStr.slice(limStr.indexOf(',') + 1)}`,
+      };
+    } else if (limStr.includes('length')) {
+      if (limStr.includes(',')) {
+        lim = limStr.match(/\d+/g);
+        limObj = `pattern value="\\d{${lim[0]}},\\d{${lim[1]}}"`;
+      } else {
+        limObj = `pattern value="\\d{${limStr.match(/\d+/)}}"`;
+      }
+    } else limObj = limStr;
+  } catch {
+    resultText.value = `При обработке ограничений возникла ошибка. Строка:${
+      i + 1
+    }`;
+    console.log(upFile);
+    return (f = 1);
+  }
+  //Нахождение описания
+  try {
+    dec = upFile
+      .match(/(^[а-я].+(?=\sВозможные значения)|^[а-я].+$)/gm)
+      .join('');
+  } catch {
+    resultText.value = `При обработке описания возникла ошибка. Строка:${
+      i + 1
+    }`;
+    console.log(upFile);
+    return (err = 1);
+  }
+
+  //Загружаем данные в объект
+  let obj = new Object(nam, tip, limObj, dec);
+  arrayType[i] = obj;
+
+  //Проверка данных
+  if (obj.limit?.min) {
+    console.log(
+      '\n[' +
+        '\n' +
+        obj.name +
+        '\n' +
+        obj.type +
+        '\n[min: ' +
+        obj.limit.min +
+        '\nmax: ' +
+        obj.limit.max +
+        ']' +
+        '\n' +
+        obj.description +
+        ']'
+    );
+  } else {
+    console.log(
+      '\n[' +
+        '\n' +
+        obj.name +
+        '\n' +
+        obj.type +
+        '\n' +
+        obj.limit +
+        '\n' +
+        obj.description +
+        ']'
+    );
+  }
+}
+
+//обработка реквизитов и остальних типов
+function updateRep(upRep, i, n) {
+  //Название элемента
+  let namr = '';
+  //Название реквитита документов
+  let name_el = '';
+  //Обязвательность
+  let imp = '';
+  //Тип
+  let tip = '';
+  //Описание реквитита
+  let dec = '';
+
+  namr = upRep.match(/^[A-Za-zА-Я]+\s*$/m);
+  if (!namr) {
+    amr = upRep.match(/^[A-Za-zА-Яа-я]+\s*$/m);
+    if (namr) {
+      resultText.value = `В названии типа указана русская буква. Строка:${n}`;
+    } else {
+      resultText.value = `Неправильное название элемента реквизита${lineRep[0].id}. Строка:${n}`;
+    }
+    nam_el = upRep
+      .slice(upRep.indexOf(namr) + namr.length + 1)
+      .match(/^[A-Zа-яА-Я].+$/m);
+
+    imp = upRep.match(/^да\s/m) ? '1' : '0';
+
+    tip = upRep.match(/((?<=\n{2})|(?<=д[аa]\n))^[A-ZА-Я]{1,2}.*\s*\s*/gm);
+
+    try {
+      dec = upRep
+        .slice(upRep.indexOf(nam_el) + 1)
+        .match(
+          /((?<=.Type\n)|(?<=.Type\s\n))[А-Яа-яA-Z].+(?!\nда)(\n.+[^Type])*$/m
+        )
+        .join('');
+    } catch {
+      dec = upRep.match(/^[A-Z]{1,2}.+Type$/m);
+      if (dec)
+        resultText.value =
+          'Тип указан неверно блока: ' +
+          lineRep[0].id +
+          '.   \n Проверьте "Type" в строке ' +
+          n;
+      else {
+        console.log(upRep, '-описание---', dec);
+        resultText.value =
+          'Проверьте описание блока ' + lineRep[0].id + 'в строке ' + n;
+      }
+      return (err = 1);
+    }
+
+    let objr = new Rep(namr, nam_el, imp, tip, dec);
+    lineRep[n] = objr;
+  }
+}
+//Очистка файлов
+document.getElementById('ClearFile').addEventListener('click', function () {
+  resultText.value = '';
+  showText('');
+  arrayType = [];
+  lineRep = [];
+  document.getElementById('inpFile').value = null;
+});
+
+// установка обработчиков событий
+document.getElementById('inpFile').addEventListener('change', showFile, false);
+document.getElementById('status').innerText.add;
+console.log('init complete');
 
 	</script>
 </html>
