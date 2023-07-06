@@ -1,540 +1,218 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="UTF-8"> 
-        <title>Document</title>
-    </head>
-    <style>
-        .hide{
-            background-color: #20c997;
-            border: 1px solid #20c997;
-        }
-        .text{
-            text-align: justify;
-            color: white;
-        }
-        .liture{
-            border: 4px solid black;
-			display: inline-block;
-            padding: 5px;
-        }
-        .main{
-            background-color:#f7fad3;
-            display: flex;
-            justify-content: space-between;
-        }
-        .main h3{
-            text-align:center;
-        }
-        .check{
-            position: relative;
-        }
-        .main_len{
-			display: inline-block;
-			width:50%;
-			
-		}
-        ol{
-            margin: 10 px; 
-        }
-		
-    </style>
-    <body>
-    <div class = "hide"> 
-      <p>
-      <div class = "text">
-        <h2>Формирование XSD схемы на основании структурированного описания форматов электронных документов</h2>
-        Версия 1.0, ФССП России, 21.06.2023.
-        <br>Форматы документов и XSD схемы публикуются
-        на <a href = "https://fssp.gov.ru" target="_blank">сайте ФССП России</a> 
-        в разделе <a href = "https://fssp.gov.ru/mvv_fssp/" target="_blank">Деятельность / Межведомственное взаимодействие</a>
-      </div>
-      </p><p></p><p>
-      <div class="main">
-        <h4>Порядок подготовки описания форматов к обработке:</h4></p>
-        <ol>
-	<li>Открыть описание форматов в формате ODS в текстовом редакторе по-умолчанию (например, LibreOffice Writer)</li>
-        <li>Сохранить как... Текст (*.txt). Убедитесь, что выбрана кодировка UTF8 для сохраняемого текстового файла</li>
-        <li>Открыть в Блокноте, проверить содержание и кодировку</li>
-        <li>Заголовок должен содержать пространство имен, являющееся идентификатором формата и идентификатор группы реквизитов, являющейся телом XML документа (далее описывается в таблице 2)</li>
-        <li>Таблица 1 должна содержать описание используемых типов реквизитов документа</li>
-        </ol>
-      </div>
-      </p>
-    </div>
+<style>
+  .hide {
+    background-color: #20c997;
+    border: 1px solid #20c997;
+  }
+  .text {
+    text-align: justify;
+    color: white;
+  }
+  .liture {
+    border: 4px solid black;
+    display: inline-block;
+    padding: 5px;
+  }
+  .main {
+    background-color: #f7fad3;
+    display: flex;
+    justify-content: space-between;
+  }
+  .main h3 {
+    text-align: center;
+  }
+  .check {
+    position: relative;
+  }
+  .main_len {
+    display: inline-block;
+    width: 50%;
+  }
+  ol {
+    margin: 10 px;
+  }
+</style>
 
-    <div class="check">
-      <p>Выберите файл описания форматов
-      <input type = "file" id = "inpFile" >
-      </p>
-      <p>Результаты обработки описания форматов:</p>
-        <div id = "status"></div><textarea id = "resultText" disabled></textarea>
-      <p>Загрузить XSD схему</p>
-      <button disabled = true type="button" id="btnDowland">Загрузить</button>
+<body>
+  <div class="hide">
+    <div class="text">
+      <h2>
+        Формирование XSD схемы на основании структурированного описания форматов
+        электронных документов
+      </h2>
+      Версия 1.0, ФССП России, 21.06.2023.
+      <br />Форматы документов и XSD схемы публикуются на
+      <a href="https://fssp.gov.ru" target="_blank">сайте ФССП России</a> в
+      разделе
+      <a href="https://fssp.gov.ru/mvv_fssp/" target="_blank"
+        >Деятельность / Межведомственное взаимодействие</a
+      >
     </div>
+    <p></p>
+    <div class="main">
+      <h4>Порядок подготовки описания форматов к обработке:</h4>
+      <ol>
+        <li>
+          Открыть описание форматов в формате ODS в текстовом редакторе
+          по-умолчанию (например, LibreOffice Writer)
+        </li>
+        <li>
+          Сохранить как... Текст (*.txt). Убедитесь, что выбрана кодировка UTF8
+          для сохраняемого текстового файла
+        </li>
+        <li>Открыть в Блокноте, проверить содержание и кодировку</li>
+        <li>
+          Заголовок должен содержать пространство имен, являющееся
+          идентификатором формата и идентификатор группы реквизитов, являющейся
+          телом XML документа (далее описывается в таблице 2)
+        </li>
+        <li>
+          Таблица 1 должна содержать описание используемых типов реквизитов
+          документа
+        </li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="check">
+    <p>
+      Выберите файл описания форматов
+      <input type="file" id="inpFile" />
+    </p>
+    <p>Результаты обработки описания форматов:</p>
+    <div id="status"></div>
+    <div id="resultText"></div>
+    <p>Загрузить XSD схему</p>
+    <button disabled="true" type="button" id="btnDowland">Загрузить</button>
+  </div>
 </body>
 
-
 <script>
-console.log('init start');
+  // ==================================================
+  // Сервисные функции
 
-//Типы реквизитов
-let arrayType = [];
-//Блок реквизитов и содержание структур
-let lineRep = [];
-//Пространство имён
-let documentId = '';
-//Заголовок xsd схемы
-let includeFile = '';
-//Конструктор типов
-function Object(name, type, limit, description) {
-  (this.name = name),
-    (this.type = type),
-    (this.limit = limit),
-    (this.description = description);
-}
-//Конструктор реквизитов
-function Rep(id, name, binding, type, description) {
-  (this.id = id),
-    (this.name = name),
-    (this.binding = binding),
-    (this.type = type),
-    (this.description = description);
-}
-//Флаг
-let f = 0;
-//Нахождение ограничений
-const searchLimit =
-  /(maxLength\s*:\s*\d*$|minLength\s*:\s*\d*|length\s*value\s*=\s*("\d+"|«\d+»)|totalDigits\s*value\s*=\s*"\d+"|fractionDigits\s*value\s*=\s*"\d+"|minInclusive\s*(:|value\s*=)\s*(-?\n?\d+|("|«).+("|»);)|maxInclusive\s*(:|value\s*=)\s*(\d+|("|«).+("|»));?|maxExclusive\s*(:|value\s*=)\s*(\d+|("|«).+("|»));?)/gm;
+  // Показать текущий статус обработки
+  function showStatus(statusText) {
+    document.getElementById('status').innerText = statusText;
+    console.log(statusText);
+  }
 
-//Обработка файла
-function showFile(input) {
-  //Текстовый файл
-  let textReader = '';
-  let file = input.files[0];
-  let reader = new FileReader();
-  //Чтение файла
-  reader.readAsText(file);
-  //Файл прочитан
-  reader.onload = function () {
-    //Помещаем текст
-    textReader = reader.result;
-    //Нахождение пространства имён
-    documentId = textReader.match(/htts?p.*?\s/);
-    if (!documentId) {
-      resultText.value = 'Не указано пространство имён';
-      console.log(textReader);
-      showText('Ошибка');
-      return;
-    }
-    //Флаг ошибки
-    let err = 0;
-    //Счётчик
-    let n = 0;
-    let f = true;
-    //Счётчик
-    let i = 0;
-    //Строка таблицы
-    let check = '';
-    //Последняя строка таблицы
-    let checkEnd = '';
-    //Название блока(Таблицы)
-    let namtip = '';
-    //Описание блока(Таблицы)
-    let dectip = '';
-    //Данные об реквизите(объекте)
-    let namtipObj = '';
-    //Нахождение строк в документе
-    count = textReader.match(
-      /(^\s{4,5}\d+\.?\s+[A-Z]|^\d{1,2}\s*[A-Z][^\n\r])/gm
-    );
-    while (true) {
-      //Превая строка
-      if (!i) {
-        check = textReader.substring(
-          textReader.indexOf(count[i]),
-          textReader.indexOf(count[i + 1])
-        );
-      } else {
-        //Последующие строки
-        if (i != count.length - 1) {
-          check = textReader.substring(
-            textReader.indexOf(count[i], textReader.indexOf(check)),
-            textReader.indexOf(
-              count[i + 1],
-              textReader.indexOf(count[i], textReader.indexOf(check))
-            )
-          );
-        }
-        //Последняя строка
-        if (
-          /\s+(Перечень видов|Перечень типов)/gm.test(check) ||
-          i == count.length - 1
-        ) {
-          checkEnd = textReader.slice(
-            textReader.indexOf(count[i], textReader.indexOf(check)),
-            textReader.indexOf(
-              textReader.match(/\s+(Перечень видов|Перечень типов)/g)
-            )
-          );
+  // Показать результат обработки
+  function showLog(statusText) {
+    document.getElementById('resultText').innerHTML += `${statusText}<br/>`;
+    console.log(statusText);
+  }
 
-          updateRep(checkEnd, i);
-          break;
-        }
-      }
-      //Нахождение полседней строчки таблицы
-      if (check.indexOf('Таблица') == -1) {
-        if (f) updateFile(check, i);
-        else {
-          updateRep(check, i, n);
-          n++;
-        }
-      } else {
-        namtip = check.match(
-          /((?<=Таблица \d. Описание составного типа данных\s)|(?<=Таблица \d{2}. Описание составного типа данных\s)|(?<=состава для блока\s)|(?<=\(блока\)\s))[A-Za-z0-9]+\b/m
-        );
-        dectip = check.match(/(?<=\()[А-Яа-я,\.\s]+(?=\)\n)/m);
-        if (!namtip) {
-          resultText.value = 'Непраильно записано название блока';
-        }
-        //Собираем данные реквизита
-        namtipObj = {
-          id: namtip,
-          name: dectip,
-        };
-        //заносим блок реквитита в массив типов
-        if (!f) arrayType.push(lineRep);
+  // Инициализация вывода
+  showStatus('Начало подготовки приложения');
+  showLog('Инициализация констант и переменных');
 
-        checkTable = check.slice(0, check.indexOf('Таблица'));
+  // Инициализация констант и переменных
 
-        if (f) {
-          updateFile(checkTable, i);
-          f = false;
+  let aRecTypes = []; // массив "Типы реквизитов"
+  let aRecTypesCaps = {
+    // Заголовки граф массива "Типы реквизитов"
+    recNo: '№',
+    recType: 'Тип реквизита',
+    recBType: 'Базовый тип данных XSD',
+    recBTypeLim: 'Ограничение базового типа данных в XSD-схеме',
+    recBTypeLim: 'Ограничение базового типа данных в XSD-схеме',
+    recTypeDesc: 'Описание типа реквизита',
+  };
+
+  // Регулярные выражения
+  // ns - пространство имен
+  var reNS =
+    /(?<ns>(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-]))/;
+  let frmtNS = '';
+  // выделение отдельных таблиц из файла
+  let reTbl =
+    /(Таблица)[^\d]+(?<tblNo>\d+)\s*\.?\s*(?<tblName>.*)[\n\r](?<tblData>[\s\S!]+?)((?=Таблица)|$)/gi;
+  let frmtTbl = '';
+  // выделение строки с описанием типа из таблицы
+  let reLineType =
+    /(?<typeNo>\d+)\s+(?<typeID>D[a-zA-Z\d]+Type)\s+(?<typeBase>(string|integer|dateTime|date|boolean|decimal|gyear))\s*(?<typeModf>(((minInclusive|maxInclusive|minLength|maxLength|length|totalDigits|fractionDigits)\s*((value)?\s*[:=]?\s*(['"«]?((\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2})?)|(-?\d+))['"»]?)?)[,;\s]*)*))(?<typeDesc>[\s\S!]+?)((?=(\d+\s+D[a-zA-Z\d]+Type\s+(string|integer|dateTime|date|boolean|decimal|gyear)))|$)/gi;
+  // выделение строки с описанием реквизита из таблицы
+  let reLineRec =
+    /(?<recNo>\d+)\s+(?<recID>[A-Z][a-zA-Z\d]+)(?<recName>[\s\S!]+?)(?<recMand>(да)?)\s+(?<recType>D[a-zA-Z\d]+Type)(?<recDesc>[\s\S!]+?)((?=(\d+\s+[A-Z][a-zA-Z\d]+)[\s\S!]+?D[a-zA-Z\d]+Type)|$)/gi;
+  let frmtLine = '';
+
+  // ==================================================
+  // Обработка выбора файла описания форматов
+  showLog('Инициализация обработчика файла');
+  document.getElementById('inpFile').addEventListener('change', function () {
+    showLog('Начало обработки');
+
+    // Очистка ранее заполненных данных
+    aRecTypes = [];
+
+    // Чтение файла
+    let input = document.getElementById('inpFile');
+    let file = input.files[0];
+    let reader = new FileReader();
+
+    // Загружаем текст из файла
+    showLog('Загрузка файла: ' + file.name);
+    let textReader = '';
+    reader.onload = function () {
+      textReader = reader.result;
+
+      // Отображаем загруженный текст
+      //document.getElementById('resultText').innerText = 'Загруженные данные:' + textReader;
+
+      let matchNS = reNS.exec(textReader);
+      frmtNS = matchNS.groups.ns;
+      showLog('Пространство имен: ' + frmtNS);
+
+      var matchTbl;
+      var tblCnt = 0;
+      while ((matchTbl = reTbl.exec(textReader))) {
+        tblCnt++;
+        frmtTbl = matchTbl.groups.tblData;
+        // full match is in match[0], whereas captured groups are in ...[1], ...[2], etc.
+        showLog(`Таблица ${matchTbl.groups.tblNo}: ${matchTbl.groups.tblName}`);
+        // обработка строк таблицы
+        var matchLine;
+        var lineCnt = 0;
+        var lineText = '';
+        if ((tblCnt = 1)) {
+          // обработка типов
+          while ((matchLine = reLineType.exec(frmtTbl))) {
+            lineCnt++;
+            frmtLine = matchLine.groups.typeNo;
+            lineText =
+              lineText +
+              '<br>' +
+              `№ ${matchLine.groups.typeNo}. ${matchLine.groups.typeID} (${matchLine.groups.typeBase}) ${matchLine.groups.typeModf};`;
+          }
         } else {
-          updateRep(checkTable, i, n);
-          n = 0;
-          lineRep[n] = namtipObj;
+          // обработка реквизитов
+          while ((matchLine = reLineRec.exec(frmtTbl))) {
+            lineCnt++;
+            frmtLine = matchLine.groups.recNo;
+            lineText =
+              lineText +
+              '<br>' +
+              `№ ${matchLine.groups.recNo}. ${matchLine.groups.recID} (${matchLine.groups.recType}) ${matchLine.groups.recName}; обяз: ${matchLine.groups.recMand}; ${matchLine.groups.recDesc};`;
+          }
+        }
+        if (lineCnt == 0) {
+          showLog(`строк не обнаружено`);
+          showLog(frmtTbl);
+        } else {
+          showLog(`строки: ${lineText}`);
         }
       }
-      i++;
-      //Резервный выход
-      if (i >= 500) break;
-      //Вывод ошибки
-      if (err) {
-        showText('Ошибка');
-        err = 0;
-      } else {
-        showText('Успех');
-        document.getElementById('btnDowland').disabled = false;
+      if (tblCnt == 0) {
+        showLog(`Таблиц не обнаружено`);
+        showLog(textReader);
       }
-    }
-    //Ошибка чтения
-    reader.onerror = function () {
-      resultText.value = reader.error;
     };
-  };
-}
+    reader.readAsText(file);
 
-//Загрузка XSD схемы
-document.getElementById('btnDowland').addEventListener('click', function () {
-  //Элементы описания
-  let elementText = '';
-  //Элемент ошибок
-  let writeWarn = '';
-  //Заголовок
-  includeFile = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:fssp="${documentId}" targetNamespace="${documentId}" elementFormDefault="qualified" attributeFormDefault="unqualified">\n`;
+    showLog('Завершение обработки');
+  });
 
-  //Проверка использования типов в реквезитах
-  // for (let i = 1 ; i<= IpProperty.length-1;i++) {
-  //     f = 0;
-  //      for (let j in arrayType) {
-  //         if (arrayType[j].name == IpProperty[i].type) {f = 1}
-  //         }
-  //     if (!f) {writeWarn =  i; break}
-  //     }
-  // if (f == 0) {
-  //     resultText.value = `Строка ${writeWarn}: Такого типа в реквезитах несуществует`;
-  //     showText("Ошибка")
-  // }else{
-
-  //Оформление xsd
-  //Заполнение структуры типов
-  for (let i = 0; i <= arrayType.length - 1; i++) {
-    let desine = arrayType[i];
-
-    //Заполнение ограничений
-    let textPattern = desine.limit?.min
-      ? `        <xs:${desine.limit.min}/>\n        <xs:${desine.limit.max}/>\n`
-      : desine.limit
-      ? `       <xs:${desine.limit}/>\n`
-      : '';
-
-    //Заполнение элементов
-    if (desine?.element) {
-      for (let j in desine.element) {
-        elementText =
-          elementText +
-          `      <xs:enumeration value="${j}">\n          <xs:annotation>\n             <xs:documentation>${desine.element[j]}</xs:documentation>\n          </xs:annotation>\n      </xs:enumeration>\n`;
-      }
-    }
-    //Заполнение структуры типов
-    includeFile =
-      includeFile +
-      `<xs:simpleType = "${desine.name}">\n    <xs:annotation>\n        <xs:documentation>${desine.description}</xs:documentation>\n    </xs:annotation>\n    <xs:restriction base="${desine.type}">\n${textPattern}${elementText}    </xs:restriction>\n</xs:simpleType>\n`;
-    elementText = '';
-  }
-
-  //Название файла
-  fileName = 'xsd_schema.txt';
-  //Скачивание файла
-  saveData(includeFile, fileName);
-  // ------------------------------------------------------------------------------------------------
-  // Структура реквизитов
-  // resultText.value = resultText.value +`<xs:element name="${IpProperty[0].id}" type="${IpProperty[0].id}Type" substitutionGroup="fssp:Object"/>
-  // <xs:complexType name="${IpProperty[0].id}Type">
-  //     <xs:annotation>
-  //     <xs:documentation>${IpProperty[0].name}</xs:documentation>
-  //     </xs:annotation>
-  //     <xs:complexContent>
-  //         <xs:extension base="fssp:ObjectType">
-  //             <xs:sequence>\n`
-
-  // for (let i = 1 ; i<= IpProperty.length-1;i++) {
-
-  //     resultText.value = resultText.value + `<xs:element name="${IpProperty[i].id}" type="fssp:${IpProperty[i].type}" minOccurs="${IpProperty[i].binding}">
-  //                 <xs:annotation>
-  //                     <xs:documentation>${IpProperty[i].name}</xs:documentation>
-  //                     <xs:documentation>${IpProperty[i].description}</xs:documentation>
-  //                 </xs:annotation>
-  //             </xs:element>`
-
-  // }
-
-  //}
-  // -----------------------------------------------------------------------------------------------
-});
-//Вывод сообщения об ошибке на экран
-function showText(stat) {
-  if (stat) {
-    document.getElementById('status').innerHTML = `-${stat}:`;
-  } else {
-    document.getElementById('status').innerHTML = ``;
-  }
-}
-
-//Скачивание файла xsd
-let saveData = (function () {
-  let a = document.createElement('a');
-  return function (data, fileName) {
-    let json = data,
-      blob = new Blob([json], { type: 'C:/' }),
-      url = window.URL.createObjectURL(blob);
-    a.href = url;
-    a.download = fileName;
-    a.click();
-    window.URL.revokeObjectURL(url);
-  };
-})();
-
-//Обработка строки
-function updateFile(upFile, i) {
-  //переменные для хранения/обработки/передачи данных из текста
-  //Название типа
-  let nam = '';
-  //Тип данных
-  let tip = '';
-  //Ограничение типа
-  let lim = '';
-  //Описание типв
-  let dec = '';
-  //Ограничение типа -- строка
-  let limObj = '';
-  //Ограничение типа -- объект
-  let limStr = '';
-  //Нахождение имени
-  nam = upFile.match(/^D[A-Za-z0-9]*\s*Typ[eе]$/m);
-  if (!nam) {
-    nam = upFile.match(/^D[A-Za-z0-9А-Яа-я]*\s*Typ[eе]$/m);
-    if (nam) {
-      resultText.value = `В названии типа указана русская буква. Строка:${
-        i + 1
-      }`;
-    } else {
-      resultText.value = `Не указано название типа. Строка:${i + 1}`;
-    }
-    console.log(upFile);
-    return (f = 1);
-  }
-  tip = !upFile.match(/^[a-z]\w*$/m) ? '' : upFile.match(/^[a-z]\w*$/m);
-  //Нахождение ограничений
-  try {
-    lim = !upFile.match(searchLimit) ? '' : upFile.match(searchLimit);
-
-    if (lim) {
-      for (j in lim) {
-        if (!lim[j].includes(lim[j].match(/".+"/m))) {
-          lim[j] = lim[j].replace(
-            lim[j].match(/\d+/m),
-            `"${lim[j].match(/\d+/m)}"`
-          );
-        }
-      }
-
-      if (lim.length == 2) {
-        limStr = lim.join(',');
-      } else {
-        limStr = lim[0];
-      }
-    } else limStr = '';
-    if (limStr) {
-      limStr = limStr.replace(/(:\s|:\D)/g, ' value= ');
-      limStr = limStr.replace(';', '');
-      limStr = limStr.replace(/(«|»)/g, '"');
-      limStr = limStr.replace(/\n/g, '');
-    }
-    if (
-      limStr.includes('minLength') ||
-      limStr.includes('totalDigits') ||
-      limStr.includes('minInclusive')
-    ) {
-      limObj = {
-        min: `${limStr.slice(0, limStr.indexOf(','))}`,
-        max: `${limStr.slice(limStr.indexOf(',') + 1)}`,
-      };
-    } else if (limStr.includes('length')) {
-      if (limStr.includes(',')) {
-        lim = limStr.match(/\d+/g);
-        limObj = `pattern value="\\d{${lim[0]}},\\d{${lim[1]}}"`;
-      } else {
-        limObj = `pattern value="\\d{${limStr.match(/\d+/)}}"`;
-      }
-    } else limObj = limStr;
-  } catch {
-    resultText.value = `При обработке ограничений возникла ошибка. Строка:${
-      i + 1
-    }`;
-    console.log(upFile);
-    return (f = 1);
-  }
-  //Нахождение описания
-  try {
-    dec = upFile
-      .match(/(^[а-я].+(?=\sВозможные значения)|^[а-я].+$)/gm)
-      .join('');
-  } catch {
-    resultText.value = `При обработке описания возникла ошибка. Строка:${
-      i + 1
-    }`;
-    console.log(upFile);
-    return (err = 1);
-  }
-
-  //Загружаем данные в объект
-  let obj = new Object(nam, tip, limObj, dec);
-  arrayType[i] = obj;
-
-  //Проверка данных
-  if (obj.limit?.min) {
-    console.log(
-      '\n[' +
-        '\n' +
-        obj.name +
-        '\n' +
-        obj.type +
-        '\n[min: ' +
-        obj.limit.min +
-        '\nmax: ' +
-        obj.limit.max +
-        ']' +
-        '\n' +
-        obj.description +
-        ']'
-    );
-  } else {
-    console.log(
-      '\n[' +
-        '\n' +
-        obj.name +
-        '\n' +
-        obj.type +
-        '\n' +
-        obj.limit +
-        '\n' +
-        obj.description +
-        ']'
-    );
-  }
-}
-
-//обработка реквизитов и остальних типов
-function updateRep(upRep, i, n) {
-  //Название элемента
-  let namr = '';
-  //Название реквитита документов
-  let name_el = '';
-  //Обязвательность
-  let imp = '';
-  //Тип
-  let tip = '';
-  //Описание реквитита
-  let dec = '';
-
-  namr = upRep.match(/^[A-Za-zА-Я]+\s*$/m);
-  if (!namr) {
-    amr = upRep.match(/^[A-Za-zА-Яа-я]+\s*$/m);
-    if (namr) {
-      resultText.value = `В названии типа указана русская буква. Строка:${n}`;
-    } else {
-      resultText.value = `Неправильное название элемента реквизита${lineRep[0].id}. Строка:${n}`;
-    }
-    nam_el = upRep
-      .slice(upRep.indexOf(namr) + namr.length + 1)
-      .match(/^[A-Zа-яА-Я].+$/m);
-
-    imp = upRep.match(/^да\s/m) ? '1' : '0';
-
-    tip = upRep.match(/((?<=\n{2})|(?<=д[аa]\n))^[A-ZА-Я]{1,2}.*\s*\s*/gm);
-
-    try {
-      dec = upRep
-        .slice(upRep.indexOf(nam_el) + 1)
-        .match(
-          /((?<=.Type\n)|(?<=.Type\s\n))[А-Яа-яA-Z].+(?!\nда)(\n.+[^Type])*$/m
-        )
-        .join('');
-    } catch {
-      dec = upRep.match(/^[A-Z]{1,2}.+Type$/m);
-      if (dec)
-        resultText.value =
-          'Тип указан неверно блока: ' +
-          lineRep[0].id +
-          '.   \n Проверьте "Type" в строке ' +
-          n;
-      else {
-        console.log(upRep, '-описание---', dec);
-        resultText.value =
-          'Проверьте описание блока ' + lineRep[0].id + 'в строке ' + n;
-      }
-      return (err = 1);
-    }
-
-    let objr = new Rep(namr, nam_el, imp, tip, dec);
-    lineRep[n] = objr;
-  }
-}
-//Очистка файлов
-document.getElementById('ClearFile').addEventListener('click', function () {
-  resultText.value = '';
-  showText('');
-  arrayType = [];
-  lineRep = [];
-  document.getElementById('inpFile').value = null;
-});
-
-// установка обработчиков событий
-document.getElementById('inpFile').addEventListener('change', showFile, false);
-document.getElementById('status').innerText.add;
-console.log('init complete');
-
-	</script>
-</html>
+  // ==================================================
+  showLog('Инициализация завершена.');
+  showStatus('Приложение готово к работе');
+</script>
